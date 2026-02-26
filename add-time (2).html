@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Add Time</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0d0f14; --card: #1a1e2a; --border: #2a2f3f;
+    --accent: #c8f060; --accent2: #60c8f0; --text: #e8eaf0; --muted: #6b7280;
+  }
+  body {
+    background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif;
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 24px; overflow-x: hidden;
+  }
+  body::before {
+    content: ''; position: fixed; top: -40%; left: -20%; width: 80vw; height: 80vw;
+    background: radial-gradient(circle, rgba(200,240,96,0.04) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  body::after {
+    content: ''; position: fixed; bottom: -30%; right: -10%; width: 60vw; height: 60vw;
+    background: radial-gradient(circle, rgba(96,200,240,0.04) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  .container { width: 100%; max-width: 680px; position: relative; z-index: 1; }
+  .screen { display: none; animation: fadeUp 0.4s ease forwards; }
+  .screen.active { display: block; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
+  .logo { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; }
+  .logo span { color: var(--accent); }
+  .tagline { color: var(--muted); font-size: 0.95rem; font-weight: 300; margin-bottom: 40px; line-height: 1.5; }
+  .section-label { font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+  .topics-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 32px; }
+  .topic-chip { padding: 8px 18px; border-radius: 999px; border: 1.5px solid var(--border); background: var(--card); color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 0.88rem; cursor: pointer; transition: all 0.18s ease; user-select: none; }
+  .topic-chip:hover { border-color: var(--accent); color: var(--text); }
+  .topic-chip.selected { border-color: var(--accent); background: rgba(200,240,96,0.1); color: var(--accent); }
+  .time-section { margin-bottom: 32px; }
+  .time-inputs { display: flex; gap: 12px; align-items: flex-end; }
+  .time-group { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .time-group label { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.05em; }
+  .time-group input { width: 100%; padding: 12px 16px; background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 1.1rem; text-align: center; outline: none; transition: border-color 0.18s; }
+  .time-group input:focus { border-color: var(--accent2); }
+  .time-group input::-webkit-inner-spin-button, .time-group input::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .time-separator { font-size: 1.5rem; color: var(--muted); padding-bottom: 12px; }
+  .quick-picks { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .quick-btn { padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 0.8rem; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+  .quick-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+  .btn-primary { width: 100%; padding: 16px; background: var(--accent); color: #0d0f14; border: none; border-radius: 14px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: all 0.18s ease; letter-spacing: 0.02em; }
+  .btn-primary:hover { background: #d4f57a; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+  .btn-secondary { padding: 10px 22px; background: transparent; color: var(--muted); border: 1.5px solid var(--border); border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; cursor: pointer; transition: all 0.15s; }
+  .btn-secondary:hover { border-color: var(--text); color: var(--text); }
+  .error-msg { background: rgba(240,96,128,0.1); border: 1px solid rgba(240,96,128,0.3); color: #f06080; padding: 12px 16px; border-radius: 10px; font-size: 0.85rem; margin-bottom: 16px; display: none; }
+  .fact-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+  .fact-counter { font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .progress-bar-wrap { width: 100%; height: 3px; background: var(--border); border-radius: 99px; margin-bottom: 32px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 99px; transition: width 0.4s ease; }
+  .fact-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 36px 32px; margin-bottom: 24px; min-height: 220px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
+  .fact-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .fact-topic-badge { display: inline-block; padding: 4px 12px; border-radius: 999px; background: rgba(200,240,96,0.1); color: var(--accent); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 20px; }
+  .fact-text { font-family: 'Playfair Display', serif; font-size: 1.2rem; line-height: 1.7; color: var(--text); flex: 1; }
+  .fact-source { margin-top: 20px; font-size: 0.75rem; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .fact-source::before { content: ''; display: inline-block; width: 16px; height: 1px; background: var(--muted); }
+  .fact-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .btn-next { flex: 1; padding: 16px; background: var(--accent); color: #0d0f14; border: none; border-radius: 14px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: all 0.18s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn-next:hover { background: #d4f57a; transform: translateY(-1px); }
+  .btn-next svg { transition: transform 0.18s; }
+  .btn-next:hover svg { transform: translateX(3px); }
+  .done-icon { font-size: 3rem; margin-bottom: 16px; }
+  .done-title { font-family: 'Playfair Display', serif; font-size: 2rem; margin-bottom: 10px; }
+  .done-sub { color: var(--muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 32px; }
+  .done-stats { display: flex; gap: 16px; margin-bottom: 32px; }
+  .stat-box { flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; text-align: center; }
+  .stat-num { font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--accent); }
+  .stat-label { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+  .done-actions { display: flex; gap: 12px; }
+  .settings-btn { position: fixed; top: 20px; right: 20px; background: var(--card); border: 1px solid var(--border); color: var(--muted); width: 38px; height: 38px; border-radius: 10px; display: none; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; z-index: 100; }
+  .settings-btn:hover { color: var(--text); border-color: var(--text); }
+  @media (max-width: 480px) { .fact-text { font-size: 1.05rem; } .fact-card { padding: 24px 20px; } .done-title { font-size: 1.6rem; } }
+</style>
+</head>
+<body>
+<button class="settings-btn" id="settingsBtn" title="Change topic preferences" onclick="goToSettings()">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+</button>
+<div class="container">
+  <div class="screen active" id="screen-topics">
+    <div class="logo">Add <span>Time</span></div>
+    <p class="tagline">Stuck waiting for an ad to be over?<br>Let's do something more interesting.</p>
+    <p class="section-label">What are you curious about?</p>
+    <div class="topics-grid" id="topicsGrid">
+      <div class="topic-chip" data-topic="Nature">🌿 Nature</div>
+      <div class="topic-chip" data-topic="Biology">🧬 Biology</div>
+      <div class="topic-chip" data-topic="Psychology">🧠 Psychology</div>
+      <div class="topic-chip" data-topic="Social Sciences">👥 Social Sciences</div>
+      <div class="topic-chip" data-topic="Physics">⚛️ Physics</div>
+      <div class="topic-chip" data-topic="Astronomy">🔭 Astronomy</div>
+      <div class="topic-chip" data-topic="History of Science">📜 History of Science</div>
+      <div class="topic-chip" data-topic="Medicine & Health">💊 Medicine & Health</div>
+      <div class="topic-chip" data-topic="Climate & Environment">🌍 Climate</div>
+      <div class="topic-chip" data-topic="Neuroscience">🔬 Neuroscience</div>
+      <div class="topic-chip" data-topic="Mathematics">📐 Mathematics</div>
+      <div class="topic-chip" data-topic="Anthropology">🏺 Anthropology</div>
+    </div>
+    <button class="btn-primary" id="continueToTime" onclick="goToTime()" disabled>Continue →</button>
+  </div>
+  <div class="screen" id="screen-time">
+    <div class="logo">Add <span>Time</span></div>
+    <p class="tagline">How long is the ad?</p>
+    <div class="time-section">
+      <p class="section-label">Ad duration</p>
+      <div class="time-inputs">
+        <div class="time-group"><label>Minutes</label><input type="number" id="inputMin" min="0" max="59" value="0"></div>
+        <div class="time-separator">:</div>
+        <div class="time-group"><label>Seconds</label><input type="number" id="inputSec" min="0" max="59" value="30"></div>
+      </div>
+      <div class="quick-picks">
+        <button class="quick-btn" onclick="setTime(0,15)">15s</button>
+        <button class="quick-btn" onclick="setTime(0,30)">30s</button>
+        <button class="quick-btn" onclick="setTime(0,45)">45s</button>
+        <button class="quick-btn" onclick="setTime(1,0)">1 min</button>
+        <button class="quick-btn" onclick="setTime(2,0)">2 min</button>
+        <button class="quick-btn" onclick="setTime(5,0)">5 min</button>
+      </div>
+    </div>
+    <div class="error-msg" id="timeError">Please enter a duration of at least 10 seconds.</div>
+    <button class="btn-primary" onclick="startSession()">Let's go →</button>
+    <br><br>
+    <button class="btn-secondary" onclick="goToSettings()">← Change topics</button>
+  </div>
+  <div class="screen" id="screen-facts">
+    <div class="fact-header">
+      <span class="logo" style="font-size:1.2rem;margin-bottom:0;">Add <span style="color:var(--accent)">Time</span></span>
+      <span class="fact-counter" id="factCounter">Fact 1 of 3</span>
+    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar" style="width:0%"></div></div>
+    <div class="fact-card">
+      <div>
+        <div class="fact-topic-badge" id="factTopic"></div>
+        <div class="fact-text" id="factText"></div>
+      </div>
+      <div class="fact-source" id="factSource"></div>
+    </div>
+    <div class="fact-actions">
+      <button class="btn-secondary" onclick="goToTime()" style="white-space:nowrap">← New ad</button>
+      <button class="btn-next" id="nextBtn" onclick="nextFact()">Next fact <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+    </div>
+  </div>
+  <div class="screen" id="screen-done">
+    <div class="done-icon">✦</div>
+    <div class="done-title">Ad's over!</div>
+    <p class="done-sub">You just turned dead time into curiosity.<br>Not bad at all.</p>
+    <div class="done-stats">
+      <div class="stat-box"><div class="stat-num" id="doneFactCount">0</div><div class="stat-label">facts learned</div></div>
+      <div class="stat-box"><div class="stat-num" id="doneTopicCount">0</div><div class="stat-label">topics covered</div></div>
+    </div>
+    <div class="done-actions">
+      <button class="btn-secondary" onclick="goToSettings()">Change topics</button>
+      <button class="btn-primary" style="flex:1" onclick="goToTime()">Another ad →</button>
+    </div>
+  </div>
+</div>
+<script>
+const FACTS = {
+  "Nature": [
+    {text:"Trees in a forest are connected through underground fungal networks called mycorrhizae, through which they share sugars, water, and warning signals about insect attacks. A single tree can be linked to hundreds of others.",source:"Smithsonian Magazine"},
+    {text:"The Immortal Jellyfish (Turritopsis dohrnii) can revert its cells back to their earliest form and restart its life cycle after reaching adulthood — making it the only known animal capable of biological immortality.",source:"Scientific American"},
+    {text:"Pistol shrimp snap their claws so fast they create a cavitation bubble that briefly reaches temperatures close to the surface of the Sun — producing a flash of light and a shockwave that stuns or kills prey.",source:"New Scientist"},
+    {text:"A single teaspoon of healthy soil contains more microorganisms than there are people on Earth. These microbes drive the nutrient cycles that make all terrestrial life possible.",source:"National Geographic"},
+    {text:"Octopuses have three hearts, blue blood, and neurons distributed throughout their arms — meaning each arm can act semi-independently, tasting and reacting to its environment without waiting for the brain.",source:"Scientific American"},
+    {text:"The largest living organism on Earth is a honey fungus in Oregon's Malheur National Forest. It spans roughly 2,385 acres and is estimated to be between 2,000 and 8,000 years old.",source:"Smithsonian Magazine"},
+    {text:"Crows can recognize individual human faces and hold grudges for years. They have been observed using tools, planning for the future, and teaching their young which humans to distrust.",source:"National Geographic"},
+    {text:"Migratory birds navigate using Earth's magnetic field, the stars, and even smell. Some species appear to literally see magnetic field lines overlaid on their vision as a directional cue.",source:"Scientific American"},
+    {text:"Plants emit ultrasonic clicking sounds from their roots and stems when stressed by drought. These sounds may be a form of signaling — and other organisms, including insects, appear to respond to them.",source:"New Scientist"},
+    {text:"The blue whale's heartbeat can be heard from over 2 miles away underwater. Its heart is the size of a small car and beats as slowly as 2 times per minute during a deep dive.",source:"National Geographic"},
+    {text:"Tardigrades — microscopic animals called water bears — survive the vacuum of space, extreme radiation, and temperatures near absolute zero by entering a suspended state called cryptobiosis.",source:"Scientific American"},
+    {text:"A clump of slime mold with no brain, eyes, or nervous system can solve maze problems, find efficient routes between food sources, and even anticipate rhythmic events — all through chemical gradients alone.",source:"New Scientist"},
+    {text:"Amazon rainforest trees pump so much water vapor into the atmosphere that they generate their own weather. These flying rivers carry more water than the Amazon River itself.",source:"National Geographic"},
+    {text:"Cleaner wrasse fish pass the mirror self-recognition test — a benchmark for self-awareness — challenging assumptions about consciousness in animals with very small brains.",source:"The Conversation"},
+    {text:"The mantis shrimp sees the world with 16 types of photoreceptors compared to 3 in humans. Yet its brain processes color more like a barcode scanner than a painter — using rapid comparisons rather than mixing.",source:"New Scientist"}
+  ],
+  "Biology": [
+    {text:"Your body replaces most of its cells throughout your lifetime, but neurons in the cerebral cortex largely last a lifetime — meaning part of your brain is literally as old as you are.",source:"NIH / MedlinePlus"},
+    {text:"Human DNA shares roughly 60% of its genes with a banana, and about 85% with a mouse. The similarities reflect how deeply conserved the molecular machinery of life truly is.",source:"Scientific American"},
+    {text:"Mitochondria — the organelles that power your cells — were once free-living bacteria absorbed by ancient cells about 1.5 billion years ago. They still carry their own DNA, separate from yours.",source:"The Conversation"},
+    {text:"The human gut microbiome contains roughly 38 trillion bacteria — comparable in number to your own cells. These microbes influence digestion, immunity, mood, and behavior.",source:"NIH / MedlinePlus"},
+    {text:"About 8% of the human genome consists of ancient viral sequences permanently integrated into our chromosomes. Viruses have been rewriting our DNA for millions of years.",source:"Scientific American"},
+    {text:"Epigenetic changes — chemical tags on DNA that turn genes on or off — can be influenced by diet, stress, and environment. Some of these changes can be passed to the next generation.",source:"New Scientist"},
+    {text:"CRISPR was not invented in a lab — it is bacteria's own immune system, used to cut and store fragments of viral DNA as a genetic memory for future defense.",source:"Smithsonian Magazine"},
+    {text:"The axolotl salamander can regenerate not just limbs, but parts of its heart, spinal cord, and even brain. Researchers are studying its enormous genome to understand this remarkable ability.",source:"Scientific American"},
+    {text:"Every cell in your body contains about 6 feet of DNA, yet it fits inside a nucleus smaller than a micron through elegant protein-scaffold folding that also controls which genes get read.",source:"NIH / MedlinePlus"},
+    {text:"Photosynthesis is surprisingly inefficient — plants capture only about 1–2% of the sunlight that hits them. Yet this is enough to produce virtually all the food and oxygen sustaining complex life on Earth.",source:"Scientific American"},
+    {text:"Quorum sensing allows bacteria to count their population and only switch on behaviors — like forming biofilms or producing toxins — once they reach a critical mass. It is a form of collective decision-making.",source:"New Scientist"},
+    {text:"Whales evolved from land-dwelling mammals resembling a large deer. The fossil record shows a gradual transition to semi-aquatic, then fully aquatic life over roughly 15 million years.",source:"Smithsonian Magazine"},
+    {text:"The appendix may serve as a reservoir of beneficial gut bacteria, helping repopulate the gut after illness wipes out the microbiome. People who had appendectomies show slightly higher rates of certain gut infections.",source:"The Conversation"},
+    {text:"Some species of jellyfish are completely transparent — not because they lack pigment, but because their body is 95% water and their proteins have evolved to scatter almost no light.",source:"National Geographic"},
+    {text:"The human immune system distinguishes self from non-self through a molecular identity system. When it fails to recognize its own cells, the result is autoimmune disease — the body attacking itself.",source:"NIH / MedlinePlus"}
+  ],
+  "Psychology": [
+    {text:"The placebo effect is real and measurable even when patients know they are taking a placebo. Open-label placebos have shown benefits for conditions including irritable bowel syndrome and chronic lower back pain.",source:"Scientific American"},
+    {text:"Studies on decision fatigue show that judges grant parole more often early in the day and after breaks, and less often as the session wears on — suggesting willpower depletes like a physical resource.",source:"Psychology Today"},
+    {text:"The Dunning-Kruger effect describes how people with limited knowledge in a domain tend to overestimate their competence, while true experts tend to underestimate themselves relative to others.",source:"Psychology Today"},
+    {text:"Cognitive reappraisal — mentally reframing a stressful situation — changes the physiological stress response. Calling anxiety excitement (both involve the same arousal state) measurably improves performance.",source:"Scientific American"},
+    {text:"The bystander effect — the tendency to help less when others are present — is well documented, but recent meta-analyses find it is weaker in real emergencies than in controlled laboratory settings.",source:"The Conversation"},
+    {text:"During slow-wave sleep, the brain replays the day's experiences to consolidate memories, and clears metabolic waste through the glymphatic system — a flushing mechanism active only during sleep.",source:"Scientific American"},
+    {text:"Social rejection activates the same neural pathways as physical pain. This is why exclusion literally hurts — and why painkillers have, in some studies, measurably reduced emotional hurt feelings.",source:"Psychology Today"},
+    {text:"People overestimate how much their happiness depends on major life events. Research on hedonic adaptation shows we return to a stable emotional baseline surprisingly quickly after both wins and losses.",source:"Scientific American"},
+    {text:"The peak-end rule shows we judge past experiences by their most intense moment and how they ended — not their average. A painful experience with a gentle ending is rated better than a shorter but uniformly painful one.",source:"Psychology Today"},
+    {text:"Intrinsic motivation — doing something for the joy of it — is undermined when external rewards are introduced and later removed. This overjustification effect suggests rewards can crowd out genuine interest.",source:"The Conversation"},
+    {text:"Awe — the feeling provoked by vast, hard-to-process experiences — measurably shrinks the perceived importance of the self, reduces inflammation markers, and increases prosocial behavior toward strangers.",source:"Scientific American"},
+    {text:"Humans see faces in random patterns — clouds, toast, tree bark. This phenomenon, called pareidolia, is a byproduct of our finely tuned social-detection system, which evolved to err on the side of seeing faces.",source:"Psychology Today"},
+    {text:"People in individualist cultures attribute behavior to personality; collectivist cultures attribute it to context. This shapes memory, perception, and even where the eye focuses in a visual scene.",source:"The Conversation"},
+    {text:"The mere exposure effect shows that people reliably prefer things they have encountered before, even subliminally. Familiarity is processed as safety, and safety gets translated into liking.",source:"Psychology Today"},
+    {text:"Humans are persistently dissatisfied with the present in a way no other animal appears to be. This same restlessness that fuels anxiety also drives creativity, exploration, and scientific progress.",source:"Scientific American"}
+  ],
+  "Social Sciences": [
+    {text:"Behaviors like obesity, smoking, and happiness spread through social networks up to three degrees of separation — affecting the friends of your friends' friends — through a phenomenon called social contagion.",source:"New Scientist"},
+    {text:"Robin Dunbar's research suggests humans can maintain about 150 stable social relationships at once. Larger groups tend to fragment without shared rituals or institutions to sustain cohesion.",source:"The Conversation"},
+    {text:"Countries with higher income inequality consistently show worse outcomes on health, crime, education, and mobility — regardless of their average wealth level. Relative inequality itself appears to cause harm.",source:"Scientific American"},
+    {text:"Across hundreds of cultures, researchers have found the same facial expressions for happiness, sadness, fear, anger, disgust, and surprise — suggesting a biological basis for emotional communication.",source:"Smithsonian Magazine"},
+    {text:"The contact hypothesis proposes that prejudice decreases through direct positive interaction between groups — but only under conditions of equal status, shared goals, and institutional support for equality.",source:"Scientific American"},
+    {text:"Language shapes thought in measurable ways. Speakers of languages without words like left and right navigate by cardinal directions by default and develop extraordinary spatial orientation as a result.",source:"The Conversation"},
+    {text:"Misinformation spreads roughly six times faster than true information on social media, according to a major MIT study of 12 years of Twitter data. False news is more novel and emotionally engaging.",source:"Scientific American"},
+    {text:"Urban environments measurably reduce attention spans and increase stress hormones, while brief exposure to natural settings restores directed attention. This is the foundation of Attention Restoration Theory.",source:"New Scientist"},
+    {text:"Stereotype threat shows that reminding people of a negative stereotype about their group — even subtly — measurably impairs their performance on tasks related to that stereotype.",source:"The Conversation"},
+    {text:"Homo sapiens are the only species known to cooperate in large scale with genetically unrelated strangers. This capacity, enabled by shared beliefs and institutions, made cities, trade, and science possible.",source:"Smithsonian Magazine"},
+    {text:"Across cultures, music that accompanies synchronized movement — marching, rowing, dancing — strongly promotes social bonding. Synchrony between strangers measurably increases trust and cooperation.",source:"The Conversation"},
+    {text:"The concept of childhood as a protected developmental phase is historically recent. In most pre-industrial societies, children were considered small adults and entered labor routinely by age 7.",source:"Smithsonian Magazine"},
+    {text:"Status anxiety — worry about one's relative position in a social hierarchy — is a stronger predictor of unhappiness than absolute poverty in wealthy nations, suggesting that inequality itself causes psychological harm.",source:"New Scientist"},
+    {text:"Gift-giving creates social bonds through reciprocity norms — the felt obligation to return a gift. Anthropologists have shown that gift economies governed complex societies long before money was invented.",source:"Smithsonian Magazine"},
+    {text:"Trust in institutions collapses faster than it builds. Studies across countries show it takes roughly four positive experiences to undo the damage of one significant institutional failure.",source:"The Conversation"}
+  ],
+  "Physics": [
+    {text:"If you removed all empty space from every atom in every human on Earth, all 8 billion of us would fit into a space smaller than a sugar cube — yet that cube would weigh about 5 billion tons.",source:"Scientific American"},
+    {text:"Time passes faster at higher altitudes. GPS satellites must correct for this relativistic effect: their onboard clocks gain about 38 microseconds per day compared to clocks on Earth's surface.",source:"NASA"},
+    {text:"Quantum entanglement allows two particles to correlate their states instantaneously across any distance. While it cannot transmit information faster than light, it cannot be explained by any classical model of reality.",source:"Scientific American"},
+    {text:"The Casimir effect proves that a perfect vacuum is never truly empty. Two uncharged metal plates placed nanometers apart in a vacuum attract each other due to quantum fluctuations of virtual particles.",source:"New Scientist"},
+    {text:"Light can be slowed to just 17 meters per second — about 38 mph — in ultra-cold Bose-Einstein condensates in laboratory conditions. In glass it slows to roughly 200 million meters per second.",source:"Scientific American"},
+    {text:"Entropy — the tendency of systems toward disorder — is why time has a direction. The laws of physics at the particle level are time-symmetric; the arrow of time emerges from statistics, not fundamental law.",source:"New Scientist"},
+    {text:"A neutron star packs more mass than our Sun into a sphere about 12 miles across. A teaspoon of neutron star material would weigh roughly a billion tons on Earth.",source:"NASA"},
+    {text:"Sound cannot travel through the vacuum of space — but gravitational waves can. These ripples in spacetime, first detected in 2015, were generated by two black holes merging 1.3 billion years ago.",source:"NASA"},
+    {text:"The double-slit experiment shows a single electron produces an interference pattern as if it passed through both slits simultaneously — but if you measure which slit it used, the interference pattern vanishes.",source:"Scientific American"},
+    {text:"Dark matter makes up about 27% of the universe and dark energy about 68%. The ordinary matter we can see, touch, and measure — stars, planets, you — is only about 5% of what exists.",source:"NASA"},
+    {text:"Absolute zero at minus 273 degrees Celsius is the lowest possible temperature. It is physically unreachable: every step toward it requires exponentially more energy to remove even a tiny amount of remaining heat.",source:"New Scientist"},
+    {text:"The photoelectric effect — the basis of solar cells — showed that light behaves as particles called photons, not just waves. It was this discovery, not relativity, that won Einstein the Nobel Prize in Physics in 1921.",source:"Smithsonian Magazine"},
+    {text:"Plasma is the most abundant state of matter in the visible universe — the Sun, stars, and most interstellar space are plasma. Yet it is almost entirely absent from everyday human experience.",source:"NASA"},
+    {text:"When water freezes it expands rather than contracts — an anomaly driven by hydrogen bonding. This is why ice floats, and why lakes freeze top-down, allowing aquatic life to survive winter beneath an insulating layer.",source:"Scientific American"},
+    {text:"Superconductors carry electrical current with zero resistance below a critical temperature. If room-temperature superconductivity were confirmed, it could revolutionize how electricity is generated and transmitted globally.",source:"New Scientist"}
+  ],
+  "Astronomy": [
+    {text:"The Milky Way galaxy is on a collision course with Andromeda. In about 4.5 billion years the galaxies will merge — but because stars are so widely spaced, very few will actually collide.",source:"NASA"},
+    {text:"Light from the Sun takes 8 minutes to reach Earth. When you look at distant galaxies through a telescope, you are seeing them as they looked billions of years ago — a form of cosmic time travel.",source:"NASA"},
+    {text:"On Venus, a day is longer than a year. Venus rotates so slowly that one full rotation takes 243 Earth days, while its orbit around the Sun takes only 225 Earth days.",source:"NASA"},
+    {text:"The observable universe contains roughly 2 trillion galaxies, each with hundreds of billions of stars. The total number of stars is estimated to exceed the number of grains of sand on all Earth's beaches combined.",source:"Scientific American"},
+    {text:"Some neutron stars spin 700 times per second. These pulsars emit radiation beams so regular they were briefly thought to be signals from intelligent civilizations when first discovered in 1967.",source:"New Scientist"},
+    {text:"Saturn's rings can be only about 30 feet thick despite spanning hundreds of thousands of miles in width. They are thought to be only a few hundred million years old — relatively recent in cosmic terms.",source:"NASA"},
+    {text:"The cosmic microwave background is the afterglow of the Big Bang, still detectable from every direction in the sky as faint microwaves. About 1 percent of the static on old analog televisions was this ancient radiation.",source:"NASA"},
+    {text:"Jupiter acts as a gravitational shield for the inner solar system, capturing or deflecting asteroids and comets that would otherwise threaten Earth. Without it, impact rates on our planet could be far higher.",source:"NASA"},
+    {text:"Water ice has been found in permanently shadowed craters near the Moon's poles. This resource could theoretically be converted into drinking water and rocket fuel for future lunar missions.",source:"NASA"},
+    {text:"The Voyager 1 spacecraft, launched in 1977, is now over 23 billion kilometers from Earth in interstellar space. It still transmits data, though its signal takes over 22 hours to reach us.",source:"NASA"},
+    {text:"The Sun will become a red giant in about 5 billion years, expanding to engulf Mercury and Venus, and possibly Earth — before shedding its outer layers and collapsing into a white dwarf the size of our planet.",source:"NASA"},
+    {text:"The expansion of the universe is accelerating. This was discovered in 1998 from observations of distant supernovae, and the Nobel Prize in Physics was awarded for this finding in 2011.",source:"Scientific American"},
+    {text:"Titan, Saturn's largest moon, has lakes and rivers — but filled with liquid methane and ethane, not water. Its dense nitrogen atmosphere and hydrocarbon rain make it the most Earth-like world in terms of surface processes.",source:"NASA"},
+    {text:"A black hole's event horizon is not a physical surface but a point of no return — the distance at which escape velocity exceeds the speed of light. Anything crossing it, including light, cannot return.",source:"Scientific American"},
+    {text:"There are more stars in the observable universe than grains of sand on all of Earth's beaches. And there are more possible chess game variations than atoms in the known universe. Scale defies human intuition.",source:"NASA"}
+  ],
+  "History of Science": [
+    {text:"Ignaz Semmelweis discovered in 1847 that handwashing by doctors dramatically reduced maternal deaths — but was ridiculed and institutionalized. Germ theory was not accepted until decades later.",source:"Smithsonian Magazine"},
+    {text:"Rosalind Franklin's X-ray crystallography images were shown to Watson and Crick without her knowledge, providing key evidence for the double helix structure of DNA. Her contribution was not acknowledged in her lifetime.",source:"Smithsonian Magazine"},
+    {text:"The scientific method was formalized during the Islamic Golden Age by scholars like Ibn al-Haytham, whose work on optics pioneered controlled experimentation over 500 years before Francis Bacon.",source:"The Conversation"},
+    {text:"Alfred Wegener proposed continental drift in 1912 and was ridiculed for decades. Plate tectonics was not accepted until the 1960s, when seafloor spreading finally provided the physical mechanism his theory had lacked.",source:"Smithsonian Magazine"},
+    {text:"Marie Curie is the only person to win Nobel Prizes in two different sciences — Physics in 1903 and Chemistry in 1911. Her research notebooks are still too radioactive to handle and are stored in lead-lined boxes.",source:"Smithsonian Magazine"},
+    {text:"Alan Turing's codebreaking work during World War II is estimated to have shortened the war by two to four years. He was later prosecuted for homosexuality and died at 41, never fully recognized in his lifetime.",source:"Smithsonian Magazine"},
+    {text:"Gregor Mendel published his laws of inheritance in 1865 but his work was completely ignored for 35 years. He died never knowing his pea plant experiments would become the foundation of modern genetics.",source:"The Conversation"},
+    {text:"The discovery of penicillin in 1928 was largely accidental — a contaminated petri dish showed mold killing bacteria. It took a decade and a world war before the compound was developed into a usable medicine.",source:"Smithsonian Magazine"},
+    {text:"Copernicus delayed publishing his heliocentric model for decades, fearing ridicule. The first printed copy of his book was reportedly handed to him on his deathbed in 1543.",source:"The Conversation"},
+    {text:"Charles Darwin waited 20 years to publish On the Origin of Species. He was finally prompted in 1859 only after Alfred Russel Wallace independently developed the same theory and wrote to him about it.",source:"Smithsonian Magazine"},
+    {text:"The first general-purpose electronic computer, ENIAC, built in 1945, weighed 27 tons, filled a room, and required a team to program by rearranging physical cables. It performed about 5,000 additions per second.",source:"Smithsonian Magazine"},
+    {text:"The ozone hole discovery in 1985 led to the Montreal Protocol in 1987 — widely considered the most successful international environmental treaty in history. The ozone layer is now measurably recovering.",source:"NOAA"},
+    {text:"The field of statistics was partly developed to solve agricultural problems. Ronald Fisher's foundational work on experimental design and significance testing grew from research at an agricultural station in England.",source:"The Conversation"},
+    {text:"The transit of Venus was so scientifically important in 1769 that warring nations suspended hostilities to allow observations. Captain Cook's voyage to Tahiti was funded partly to record this event.",source:"The Conversation"},
+    {text:"The Standard Model of particle physics — describing all known fundamental particles and forces — was largely complete by the 1970s, yet leaves out gravity entirely. Unifying the two remains the great unsolved problem of physics.",source:"New Scientist"}
+  ],
+  "Medicine & Health": [
+    {text:"Chronic stress shortens telomeres — the protective caps on chromosomes — accelerating cellular aging. Caregivers of chronically ill patients show telomere lengths years shorter than their biological age.",source:"Scientific American"},
+    {text:"The gut-brain axis is a two-way communication network linking the gut's own nerve system to the brain. Gut microbiome changes have been linked to depression, anxiety, and even autism spectrum traits.",source:"NIH / MedlinePlus"},
+    {text:"The human liver is the only solid internal organ capable of complete regeneration. After removing up to 75 percent of the liver, the remaining tissue can regrow to full size within weeks.",source:"NIH / MedlinePlus"},
+    {text:"Fasting triggers autophagy — a cellular cleaning process in which cells digest damaged proteins and organelles. This mechanism won the Nobel Prize in 2016 and is being studied for its role in aging and cancer.",source:"Scientific American"},
+    {text:"Smallpox killed an estimated 300 million people in the 20th century alone. It was eradicated in 1980 through global vaccination — the only human disease ever deliberately wiped from the planet.",source:"NIH / MedlinePlus"},
+    {text:"The blood-brain barrier is far more dynamic than once thought. It loosens during sleep to allow waste clearance, responds to inflammation, and can be temporarily bypassed using focused ultrasound beams.",source:"New Scientist"},
+    {text:"Aspirin remains one of medicine's most remarkable drugs — reducing pain, fever, and heart attack risk, and under investigation for cancer prevention. Most of these effects were discovered long after the drug was invented.",source:"NIH / MedlinePlus"},
+    {text:"MRSA, one of the most feared antibiotic-resistant bacteria, was identified in 1961 — just one year after the antibiotic methicillin was introduced. Antibiotic resistance evolves much faster than most people realize.",source:"Scientific American"},
+    {text:"Social isolation is a health risk comparable to smoking 15 cigarettes a day. Loneliness increases the risk of dementia by 26 percent, heart disease by 29 percent, and stroke by 32 percent.",source:"Psychology Today"},
+    {text:"Cancer has been found in dinosaur bones and ancient mummies — it is not a modern disease. However, rates of certain cancers have increased dramatically alongside industrialization and lifestyle changes.",source:"Smithsonian Magazine"},
+    {text:"Childhood trauma measurably alters gene expression through epigenetic mechanisms, affecting stress response systems in ways that can persist into adulthood and potentially be passed to the next generation.",source:"NIH / MedlinePlus"},
+    {text:"The mRNA vaccine platform used in COVID-19 vaccines was over 30 years in development. Early researchers struggled for funding, as the technology was considered too unstable for clinical use for most of that time.",source:"New Scientist"},
+    {text:"Exercise is the most robustly evidence-based treatment for mild-to-moderate depression — outperforming antidepressants in some trials, and matching them in efficacy when combined with medication for severe cases.",source:"Scientific American"},
+    {text:"Most people carry multiple genetic variants associated with serious disease without ever developing those conditions. Whether genes are expressed depends heavily on epigenetics, environment, and chance.",source:"The Conversation"},
+    {text:"The appendix may serve as a reservoir of beneficial gut bacteria, helping repopulate the gut after infectious illness. People who had appendectomies show slightly higher rates of certain gut infections.",source:"NIH / MedlinePlus"}
+  ],
+  "Climate & Environment": [
+    {text:"The ocean absorbs about 30 percent of the CO2 humans emit each year, slowing climate change — but also causing ocean acidification, which has increased ocean acidity by about 26 percent since the Industrial Revolution.",source:"NOAA"},
+    {text:"Permafrost covers about 25 percent of the Northern Hemisphere's land area and stores twice as much carbon as is currently in the atmosphere. Thawing permafrost releases this as CO2 and methane.",source:"NOAA"},
+    {text:"The last time CO2 was at today's levels, global temperatures were 2 to 3 degrees Celsius warmer and sea levels were 5 to 20 meters higher. That era, the Pliocene, was about 3 million years ago.",source:"Scientific American"},
+    {text:"Coral bleaching occurs when ocean temperatures rise by just 1 degree Celsius above the summer maximum for several weeks. The corals expel symbiotic algae that provide up to 90 percent of their energy.",source:"NOAA"},
+    {text:"Plastic pollution breaks down into microplastics smaller than 5 millimeters that have now been found in the deepest ocean trenches, Arctic ice, clouds, human blood, placentas, and breast milk.",source:"National Geographic"},
+    {text:"The Amazon rainforest produces about 20 percent of the world's oxygen — but also consumes roughly the same through respiration. Its climate importance lies in water cycling and carbon storage, not net oxygen production.",source:"The Conversation"},
+    {text:"Global insect populations have declined by an estimated 45 percent over 40 years. Insects pollinate 75 percent of flowering plant species and form the base of most terrestrial food chains.",source:"Scientific American"},
+    {text:"The urban heat island effect can make cities 1 to 7 degrees Celsius warmer than surrounding rural areas, due to heat-absorbing surfaces, reduced vegetation, and waste heat from buildings and vehicles.",source:"NOAA"},
+    {text:"The stratospheric ozone layer is recovering thanks to the Montreal Protocol banning chlorofluorocarbons. Full recovery is projected by around 2066 — a rare environmental success story driven by global cooperation.",source:"NOAA"},
+    {text:"Wetlands cover just 6 percent of Earth's land but store about 30 percent of all terrestrial carbon — mostly as peat. They are being drained and converted at a rate that makes them among the most threatened ecosystems on Earth.",source:"National Geographic"},
+    {text:"Methane is 80 times more potent than CO2 as a greenhouse gas over a 20-year period. Agriculture, landfills, and fossil fuels are the major human sources, and atmospheric methane has more than doubled since pre-industrial times.",source:"NOAA"},
+    {text:"Antarctica's ice sheet holds enough water, if fully melted, to raise global sea levels by approximately 58 meters. It contains about 70 percent of Earth's fresh water and is showing accelerating mass loss at its edges.",source:"Scientific American"},
+    {text:"Climate tipping points — like Amazon dieback, ice sheet collapse, and permafrost thaw — may trigger each other in a cascade, reducing humanity's ability to stabilize the climate even with rapid emissions cuts.",source:"New Scientist"},
+    {text:"The Great Barrier Reef experienced its most widespread bleaching event on record in 2022, affecting over 91 percent of surveyed reefs. Coral reefs support 25 percent of all marine species despite covering less than 1 percent of the ocean floor.",source:"National Geographic"},
+    {text:"Reforestation is among the most cost-effective natural tools for carbon capture — but forests must be protected from fire, drought, and pests intensified by the very climate change they are meant to help mitigate.",source:"The Conversation"}
+  ],
+  "Neuroscience": [
+    {text:"The brain consumes about 20 percent of the body's energy despite being only 2 percent of its mass. Most of this goes not toward conscious thought but toward maintaining the brain's default resting state.",source:"Scientific American"},
+    {text:"Memories are not stored like files. Every time you recall a memory, you reconstruct it — and subtly alter it. This memory reconsolidation means recollections become less accurate each time they are accessed.",source:"NIH / MedlinePlus"},
+    {text:"Neuroplasticity continues throughout life. Studies on London taxi drivers found measurably enlarged hippocampi — the brain's navigation center — compared to non-drivers, demonstrating use-driven brain growth in adults.",source:"New Scientist"},
+    {text:"The default mode network, active during rest and mind-wandering, was long considered neural noise. It is now understood to be critical for self-reflection, social cognition, future planning, and creative thought.",source:"Scientific American"},
+    {text:"Pain is constructed by the brain, not simply received from the body. Identical injuries produce vastly different pain experiences based on attention, expectation, and context — which is why distraction and belief genuinely reduce pain.",source:"New Scientist"},
+    {text:"Psychedelic compounds like psilocybin dramatically increase the entropy of brain activity — shaking up fixed patterns of thought. This temporary flexibility may explain their therapeutic potential for depression and addiction.",source:"New Scientist"},
+    {text:"Humans have a dedicated neural system for processing faces that activates faster than object recognition. Damage to it causes prosopagnosia — the inability to recognize faces, even of loved ones or one's own reflection.",source:"Scientific American"},
+    {text:"The brain generates its own opioids — endorphins — which are 18 to 500 times more potent than morphine by weight. They are released by exercise, laughter, music, and social bonding.",source:"NIH / MedlinePlus"},
+    {text:"During REM sleep the brain is almost as active as when awake — and the body is temporarily paralyzed to prevent acting out dreams. REM sleep is essential for emotional processing and memory consolidation.",source:"Scientific American"},
+    {text:"Synesthesia — the automatic blending of senses, like seeing letters as colors — occurs in about 4 percent of people. Research shows it is real, involuntary, and consistent over decades, not a metaphor or imagination.",source:"New Scientist"},
+    {text:"The cerebellum, long thought to only coordinate movement, plays roles in language, emotional regulation, and social behavior. It contains more neurons than the rest of the brain combined.",source:"Scientific American"},
+    {text:"The left brain and right brain are not divided by function as simply as the popular myth suggests. Language, emotion, creativity, and logic all involve complex networks spanning both hemispheres.",source:"The Conversation"},
+    {text:"The social brain hypothesis proposes that the expansion of the human neocortex was driven by the demands of tracking complex social relationships — not by tool use, foraging, or language, as once believed.",source:"The Conversation"},
+    {text:"Brains do not just process reality — they predict it. The predictive processing model suggests perception is mostly a controlled hallucination that the brain updates when sensory input surprises it.",source:"New Scientist"},
+    {text:"Neurofeedback — real-time displays of brain activity that patients learn to consciously control — has shown promising results for ADHD, PTSD, and epilepsy, suggesting the brain can regulate its own electrical patterns.",source:"NIH / MedlinePlus"}
+  ],
+  "Mathematics": [
+    {text:"There are different sizes of infinity. The infinity of real numbers between 0 and 1 is demonstrably larger than the infinity of all counting numbers — a result proved by Georg Cantor in 1891 that scandalized many mathematicians.",source:"Scientific American"},
+    {text:"The Monty Hall problem trips up most people: switching doors after one is revealed gives a 2 in 3 chance of winning, not 1 in 2. Even professional mathematicians initially rejected this result when published.",source:"The Conversation"},
+    {text:"The Fibonacci sequence appears in sunflower seeds, pinecone scales, and shell spirals — because it represents the most efficient packing solution in growing biological structures.",source:"National Geographic"},
+    {text:"Godel's incompleteness theorems proved that any sufficiently powerful mathematical system contains true statements that cannot be proved within that system. Mathematics cannot fully explain itself.",source:"Scientific American"},
+    {text:"The birthday paradox: in a group of just 23 people, there is a greater than 50 percent chance two share a birthday. With 70 people, it exceeds 99.9 percent. Our intuitions about probability are consistently wrong.",source:"The Conversation"},
+    {text:"Zero was not always obvious. Ancient Greek and Roman mathematics had no concept of zero as a number. It was developed in India around the 5th century CE and is now considered among the most profound mathematical inventions in history.",source:"Smithsonian Magazine"},
+    {text:"Pi has been calculated to over 100 trillion decimal places — and no repeating pattern has ever been found. Whether it contains every possible finite sequence of digits remains an unproven conjecture.",source:"Scientific American"},
+    {text:"The four-color theorem — that any map needs at most four colors so no adjacent regions share a color — was the first major theorem proved using a computer in 1976. Some mathematicians still find the proof philosophically unsatisfying.",source:"The Conversation"},
+    {text:"Chaos theory shows that tiny differences in initial conditions produce wildly different outcomes over time. Chaotic systems are fully deterministic — not random — yet become practically unpredictable beyond short time horizons.",source:"Scientific American"},
+    {text:"The unreasonable effectiveness of mathematics in describing physical reality remains a genuine philosophical puzzle. Abstract mathematics developed purely for its own sake repeatedly turns out to perfectly describe the physical world.",source:"New Scientist"},
+    {text:"Fermat's Last Theorem was stated in 1637 and remained unproven for 358 years. It was finally proved by Andrew Wiles in 1994 after seven years of secret work. The proof runs to over 100 pages.",source:"Smithsonian Magazine"},
+    {text:"The Banach-Tarski paradox proves mathematically that a solid sphere can be decomposed into a finite number of pieces and reassembled into two spheres each the same size as the original, using only rotations and translations.",source:"New Scientist"},
+    {text:"Simpson's paradox shows that a trend can appear in each of several groups of data but disappear — or reverse — when the groups are combined. It has misled researchers in medicine, economics, and social science.",source:"The Conversation"},
+    {text:"A tesseract is the four-dimensional equivalent of a cube — formed by extruding a cube into a fourth dimension. It has 8 cubic faces, 24 square faces, 32 edges, and 16 vertices, none of which can be directly visualized.",source:"Scientific American"},
+    {text:"Prime numbers thin out as numbers grow larger — but never stop appearing. The exact distribution of primes, described by the Riemann Hypothesis, remains one of the deepest unsolved problems in all of mathematics.",source:"Scientific American"}
+  ],
+  "Anthropology": [
+    {text:"Homo sapiens coexisted with at least four other human species. Modern humans outside Africa carry about 1 to 4 percent Neanderthal DNA — evidence of interbreeding rather than simple replacement.",source:"Smithsonian Magazine"},
+    {text:"The oldest known cave paintings, in Sulawesi, Indonesia, date to at least 45,500 years ago — older than the famous Lascaux caves in France. Abstract symbols and hand stencils appear even earlier in South Africa.",source:"Smithsonian Magazine"},
+    {text:"Cooking likely played a central role in human brain evolution. Cooked food is far more calorie-dense and digestible, allowing the gut to shrink and freeing energy for the calorie-hungry brain to grow.",source:"The Conversation"},
+    {text:"The transition from foraging to farming worsened human health. Agricultural populations showed smaller stature, worse dental health, and more infectious disease than their hunter-gatherer predecessors.",source:"Smithsonian Magazine"},
+    {text:"Human childhood is extraordinarily long compared to other primates — we remain dependent far longer than any other species. This extended dependency enables the massive cultural learning that defines humanity.",source:"Scientific American"},
+    {text:"Genetic and fossil evidence supports the Out of Africa model: all modern humans descend from a population that left Africa roughly 60,000 to 70,000 years ago and spread across the globe within tens of thousands of years.",source:"Smithsonian Magazine"},
+    {text:"The domestication of dogs is the oldest known animal domestication, beginning at least 15,000 years ago. Dogs appear to have co-evolved with humans to read human social cues — a capacity wolves do not naturally share.",source:"National Geographic"},
+    {text:"Across all studied human societies, music, dance, and storytelling are universal. Anthropologists consider these cultural universals evidence of deep cognitive and social functions predating recorded history.",source:"Smithsonian Magazine"},
+    {text:"Evidence of long-distance trade networks — obsidian, shells, pigments — appears over 300,000 years ago, long before complex civilizations. Early humans had sophisticated social and geographic awareness much earlier than once thought.",source:"The Conversation"},
+    {text:"Hunter-gatherer societies typically work far fewer hours than agricultural or industrial societies — often 4 to 6 hours a day. Farming brought more food security, but also more labor, disease, and social inequality.",source:"Scientific American"},
+    {text:"The concept of race as a biological category has no support in modern genetics. Human genetic variation is largely continuous and greater within so-called racial groups than between them.",source:"The Conversation"},
+    {text:"The Inca Khipu was a recording device made of knotted strings. Researchers are still working to decode whether it encoded narrative information or only numerical data.",source:"Smithsonian Magazine"},
+    {text:"Skeletal evidence suggests interpersonal violence was relatively rare in most pre-state societies. The rise of warfare correlates more strongly with agriculture, states, and accumulated wealth than with innate human aggression.",source:"The Conversation"},
+    {text:"Language is estimated to have emerged at least 100,000 to 150,000 years ago based on anatomical evidence. But the exact origins of symbolic language remain one of anthropology's most actively debated questions.",source:"The Conversation"},
+    {text:"Ritual burial — including placement of flowers or ochre with the dead — has been documented at Neanderthal sites. Whether this reflects symbolic or spiritual thought remains actively debated among anthropologists.",source:"The Conversation"}
+  ]
+};
+
+let selectedTopics = [];
+let sessionQueue = [];
+let currentIdx = 0;
+let totalFacts = 0;
+let shownIndices = {};
+
+function loadPrefs() {
+  try { const s = localStorage.getItem('addtime_topics'); if (s) selectedTopics = JSON.parse(s); } catch(e) {}
+}
+function savePrefs() {
+  try { localStorage.setItem('addtime_topics', JSON.stringify(selectedTopics)); } catch(e) {}
+}
+
+document.querySelectorAll('.topic-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const t = chip.dataset.topic;
+    if (selectedTopics.includes(t)) {
+      selectedTopics = selectedTopics.filter(x => x !== t);
+      chip.classList.remove('selected');
+    } else {
+      selectedTopics.push(t);
+      chip.classList.add('selected');
+    }
+    savePrefs();
+    document.getElementById('continueToTime').disabled = selectedTopics.length === 0;
+  });
+});
+
+function syncChips() {
+  document.querySelectorAll('.topic-chip').forEach(chip => {
+    chip.classList.toggle('selected', selectedTopics.includes(chip.dataset.topic));
+  });
+  document.getElementById('continueToTime').disabled = selectedTopics.length === 0;
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goToSettings() {
+  showScreen('screen-topics');
+  document.getElementById('settingsBtn').style.display = 'none';
+  syncChips();
+}
+function goToTime() {
+  showScreen('screen-time');
+  document.getElementById('settingsBtn').style.display = 'flex';
+  document.getElementById('timeError').style.display = 'none';
+}
+function setTime(min, sec) {
+  document.getElementById('inputMin').value = min;
+  document.getElementById('inputSec').value = sec;
+}
+function getTotalSeconds() {
+  return (parseInt(document.getElementById('inputMin').value)||0)*60 + (parseInt(document.getElementById('inputSec').value)||0);
+}
+function calcFactCount(secs) { return Math.max(1, Math.round(secs / 15)); }
+
+function getNextFact(topic) {
+  const pool = FACTS[topic];
+  if (!pool) return null;
+  if (!shownIndices[topic]) shownIndices[topic] = new Set();
+  if (shownIndices[topic].size >= pool.length) shownIndices[topic] = new Set();
+  let idx;
+  do { idx = Math.floor(Math.random() * pool.length); } while (shownIndices[topic].has(idx));
+  shownIndices[topic].add(idx);
+  return pool[idx];
+}
+
+function startSession() {
+  const secs = getTotalSeconds();
+  if (secs < 10) { document.getElementById('timeError').style.display = 'block'; return; }
+  document.getElementById('timeError').style.display = 'none';
+  totalFacts = calcFactCount(secs);
+  currentIdx = 0;
+  sessionQueue = [];
+  for (let i = 0; i < totalFacts; i++) {
+    const topic = selectedTopics[i % selectedTopics.length];
+    const factObj = getNextFact(topic);
+    if (factObj) sessionQueue.push({ topic, factObj });
+  }
+  showScreen('screen-facts');
+  document.getElementById('settingsBtn').style.display = 'flex';
+  renderFact();
+}
+
+function renderFact() {
+  const item = sessionQueue[currentIdx];
+  const pct = totalFacts > 1 ? (currentIdx / (totalFacts - 1)) * 100 : 0;
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('factCounter').textContent = 'Fact ' + (currentIdx+1) + ' of ' + totalFacts;
+  document.getElementById('factTopic').textContent = item.topic;
+  document.getElementById('factText').textContent = item.factObj.text;
+  document.getElementById('factSource').textContent = 'Source: ' + item.factObj.source;
+  const btn = document.getElementById('nextBtn');
+  if (currentIdx >= totalFacts - 1) {
+    btn.innerHTML = 'Done ✦';
+  } else {
+    btn.innerHTML = 'Next fact <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+  }
+}
+
+function nextFact() {
+  if (currentIdx >= totalFacts - 1) {
+    document.getElementById('doneFactCount').textContent = totalFacts;
+    document.getElementById('doneTopicCount').textContent = [...new Set(sessionQueue.map(x => x.topic))].length;
+    showScreen('screen-done');
+    return;
+  }
+  currentIdx++;
+  renderFact();
+}
+
+loadPrefs();
+syncChips();
+if (selectedTopics.length > 0) { goToTime(); }
+</script>
+</body>
+</html>
